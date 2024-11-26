@@ -30,7 +30,7 @@ class Genre(models.Model):
         ordering = ('name', )
 
     def __str__(self):
-        return self.name[:STRING_SHOW]
+        return f'name: {self.name[:STRING_SHOW]} slug: {self.slug}'
 
 
 class Category(models.Model):
@@ -47,7 +47,7 @@ class Category(models.Model):
         ordering = ('name', )
 
     def __str__(self):
-        return self.name[:STRING_SHOW]
+        return f'name: {self.name[:STRING_SHOW]} slug: {self.slug}'
 
 
 class Review(PubDate):
@@ -71,7 +71,7 @@ class Review(PubDate):
         default_related_name = 'reviews'
 
     def __str__(self):
-        return self.text[:STRING_SHOW]
+        return f'text: {self.text[:STRING_SHOW]} author: {self.author}'
 
 
 class Comment(PubDate):
@@ -94,7 +94,7 @@ class Comment(PubDate):
         default_related_name = 'comments'
 
     def __str__(self):
-        return self.text[:STRING_SHOW]
+        return f'text: {self.text[:STRING_SHOW]} author: {self.author}'
 
 
 class Title(models.Model):
@@ -124,4 +124,4 @@ class Title(models.Model):
         ordering = ['name', '-year']
 
     def __str__(self):
-        return self.name[:STRING_SHOW]
+        return f'name: {self.name[:STRING_SHOW]} category: {self.category}'
