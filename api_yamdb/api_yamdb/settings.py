@@ -18,8 +18,9 @@ INSTALLED_APPS = [
 
     'rest_framework',
 
-    'api',
-    'users',
+    'api.v1.apps.ApiConfig',
+    'users.apps.UsersConfig',
+    'reviews.apps.ReviewsConfig',
 ]
 
 MIDDLEWARE = [
