@@ -1,28 +1,48 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from constants import STRING_SHOW, NAME_STRING_LENGTH, SLUG_LENGTH
+from constants import (
+    STRING_SHOW, NAME_STRING_LENGTH, SLUG_LENGTH, NAME_TITLE_LENGTH,
+)
 
 User = get_user_model()
 
 
 class PubDate(models.Model):
+    text = models.TextField(
+        verbose_name='Текст',
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
-        verbose_name='Дата публикации'
+        verbose_name='Дата публикации',
     )
 
     class Meta:
         abstract = True
 
 
-class Genre(models.Model):
-    name = models.CharField(max_length=NAME_STRING_LENGTH,
-                            unique=True,
-                            verbose_name='Название жанра')
-    slug = models.SlugField(max_length=SLUG_LENGTH,
-                            unique=True,
-                            verbose_name='Slug')
+class NameSlug(models.Model):
+    name = models.CharField(
+        max_length=NAME_STRING_LENGTH,
+        unique=True,
+        verbose_name='Название',
+    )
+    slug = models.SlugField(
+        max_length=SLUG_LENGTH,
+        unique=True,
+        verbose_name='Slug',
+    )
+
+    class Meta:
+        abstract = True
+
+
+class Genre(NameSlug):
 
     class Meta:
         verbose_name = 'Жанр'
@@ -33,13 +53,7 @@ class Genre(models.Model):
         return f'name: {self.name[:STRING_SHOW]} slug: {self.slug}'
 
 
-class Category(models.Model):
-    name = models.CharField(max_length=NAME_STRING_LENGTH,
-                            unique=True,
-                            verbose_name='Название категории')
-    slug = models.SlugField(max_length=SLUG_LENGTH,
-                            unique=True,
-                            verbose_name='Slug')
+class Category(NameSlug):
 
     class Meta:
         verbose_name = 'Категория'
@@ -51,40 +65,36 @@ class Category(models.Model):
 
 
 class Review(PubDate):
-    text = models.TextField(verbose_name='Текст отзыва')
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор отзыва'
-    )
     title = models.ForeignKey(
         'Title',
         on_delete=models.CASCADE,
-        verbose_name='Произведение'
+        verbose_name='Произведение',
     )
-    score = models.PositiveSmallIntegerField()
+    score = models.PositiveSmallIntegerField(
+        verbose_name='Рейтинг',
+    )
 
     class Meta:
         ordering = ('-pub_date',)
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         default_related_name = 'reviews'
+        constraints = [
+            models.UniqueConstraint(
+                fields=('title', 'auhtor'),
+                name='unique_review',
+            )
+        ]
 
     def __str__(self):
         return f'text: {self.text[:STRING_SHOW]} author: {self.author}'
 
 
 class Comment(PubDate):
-    text = models.TextField(verbose_name='Текст комментария')
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор комментария'
-    )
     review = models.ForeignKey(
         'Review',
         on_delete=models.CASCADE,
-        verbose_name='Отзыв'
+        verbose_name='Отзыв',
     )
 
     class Meta:
@@ -99,28 +109,31 @@ class Comment(PubDate):
 
 class Title(models.Model):
     name = models.CharField(
-        max_length=100,
+        max_length=NAME_TITLE_LENGTH,
         verbose_name='Название произведения'
     )
-    year = models.PositiveSmallIntegerField(verbose_name='Год производства')
-    description = models.TextField(verbose_name="Описание")
+    year = models.PositiveSmallIntegerField(
+        verbose_name='Год производства',
+    )
+    description = models.TextField(
+        verbose_name="Описание",
+        blank=True,
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
-        related_name='titles',
         verbose_name='Категория',
-        null=True
+        null=True,
     )
     genres = models.ManyToManyField(
         Genre,
-        related_name='titles',
         verbose_name='Жанр',
-        null=True
     )
 
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
+        default_related_name = 'titles'
         ordering = ['name', '-year']
 
     def __str__(self):
