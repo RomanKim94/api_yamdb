@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from constants import constants as const
+import constants as const
 
 User = get_user_model()
 
@@ -10,12 +10,12 @@ class PubDate(models.Model):
     text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
         verbose_name='Автор',
+        on_delete=models.CASCADE,
     )
     pub_date = models.DateTimeField(
-        auto_now_add=True,
         verbose_name='Дата публикации',
+        auto_now_add=True,
     )
 
     class Meta:
@@ -24,14 +24,14 @@ class PubDate(models.Model):
 
 class NameSlug(models.Model):
     name = models.CharField(
+        verbose_name='Название',
         max_length=const.NAME_STRING_LENGTH,
         unique=True,
-        verbose_name='Название',
     )
     slug = models.SlugField(
+        verbose_name='Слаг',
         max_length=const.SLUG_LENGTH,
         unique=True,
-        verbose_name='Slug',
     )
 
     class Meta:
@@ -43,7 +43,7 @@ class Genre(NameSlug):
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
-        ordering = ('name', )
+        ordering = ('name',)
 
     def __str__(self):
         return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
@@ -54,7 +54,7 @@ class Category(NameSlug):
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
-        ordering = ('name', )
+        ordering = ('name',)
 
     def __str__(self):
         return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
@@ -63,8 +63,8 @@ class Category(NameSlug):
 class Review(PubDate):
     title = models.ForeignKey(
         'Title',
-        on_delete=models.CASCADE,
         verbose_name='Произведение',
+        on_delete=models.CASCADE,
     )
     score = models.PositiveSmallIntegerField(verbose_name='Рейтинг')
 
@@ -75,7 +75,7 @@ class Review(PubDate):
         default_related_name = 'reviews'
         constraints = (
             models.UniqueConstraint(
-                fields=('title', 'auhtor'),
+                fields=('title', 'author'),
                 name='unique_review',
             ),
         )
@@ -86,9 +86,9 @@ class Review(PubDate):
 
 class Comment(PubDate):
     review = models.ForeignKey(
-        'Review',
-        on_delete=models.CASCADE,
+        Review,
         verbose_name='Отзыв',
+        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -103,33 +103,25 @@ class Comment(PubDate):
 
 class Title(models.Model):
     name = models.CharField(
+        verbose_name='Название произведения',
         max_length=const.NAME_TITLE_LENGTH,
-        verbose_name='Название произведения'
     )
-    year = models.PositiveSmallIntegerField(
-        verbose_name='Год производства',
-    )
-    description = models.TextField(
-        verbose_name="Описание",
-        blank=True,
-    )
+    year = models.PositiveSmallIntegerField(verbose_name='Год производства')
+    description = models.TextField(verbose_name="Описание", blank=True)
     category = models.ForeignKey(
         Category,
-        on_delete=models.SET_NULL,
         verbose_name='Категория',
+        on_delete=models.SET_NULL,
         null=True,
     )
-    genres = models.ManyToManyField(
-        Genre,
-        verbose_name='Жанр',
-    )
+    genres = models.ManyToManyField(Genre, verbose_name='Жанр')
 
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
-        ordering = ['name', '-year']
+        ordering = ('name', '-year',)
         default_related_name = 'titles'
 
     def __str__(self):
-        return (
-            f'name: {self.name[:const.STRING_SHOW]} category: {self.category}')
+        return (f'name: {self.name[:const.STRING_SHOW]} '
+                f'category: {self.category}')
