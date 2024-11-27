@@ -107,7 +107,7 @@ class Title(models.Model):
         max_length=const.NAME_TITLE_LENGTH,
     )
     year = models.PositiveSmallIntegerField(verbose_name='Год производства')
-    description = models.TextField(verbose_name="Описание", blank=True)
+    description = models.TextField(verbose_name='Описание', blank=True)
     category = models.ForeignKey(
         Category,
         verbose_name='Категория',
