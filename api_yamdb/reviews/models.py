@@ -114,7 +114,7 @@ class Title(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    genres = models.ManyToManyField(Genre, verbose_name='Жанр')
+    genre = models.ManyToManyField(Genre, verbose_name='Жанр')
 
     class Meta:
         verbose_name = 'Произведение'
