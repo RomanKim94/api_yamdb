@@ -23,9 +23,23 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleSerializer(serializers.ModelSerializer):
     """Сериализатор произведений."""
 
-    category = SlugRelatedField(slug_field='slug', read_only=True)
-    genre = SlugRelatedField(slug_field='slug', read_only=True, many=True)
+    category = SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all())
+    genre = SlugRelatedField(
+        slug_field='slug', many=True,
+        queryset=Genre.objects.all())
+    rating = serializers.IntegerField(read_only=True, default=0)
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        representation['category'] = CategorySerializer(
+            instance.category).data
+        representation['genre'] = GenreSerializer(
+            instance.genre, many=True).data
+        return representation
 
     class Meta:
         model = Title
-        fields = '__all__'
+        fields = ('id', 'name', 'year', 'rating', 'description',
+                  'genre', 'category')
