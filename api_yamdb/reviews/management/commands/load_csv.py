@@ -60,7 +60,7 @@ class Command(BaseCommand):
             return self.get_default_csv_files()
         return [
             self.validate_file_path(
-                os.path.join(settings.BASE_DIR, file_path)
+                os.path.join(DEFAULT_CSV_FOLDER_PATH, *file_path)
             )
         ]
 
