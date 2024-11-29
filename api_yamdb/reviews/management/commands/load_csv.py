@@ -60,8 +60,8 @@ class Command(BaseCommand):
             return self.get_default_csv_files()
         return [
             self.validate_file_path(
-                os.path.join(DEFAULT_CSV_FOLDER_PATH, *file_path)
-            )
+                os.path.join(DEFAULT_CSV_FOLDER_PATH, path)
+            ) for path in file_path
         ]
 
     def get_model_objects(self, model, file_data):
