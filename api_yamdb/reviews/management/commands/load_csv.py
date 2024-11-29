@@ -70,10 +70,10 @@ class Command(BaseCommand):
         objects = []
         for field in model._meta.fields:
             if field.is_relation:
-                if not field.many_to_many:
-                    related_fields.append(field.name)
-                elif field.many_to_many:
+                if field.many_to_many:
                     m_to_m_fields.append(field.name)
+                else:
+                    related_fields.append(field.name)
         for row in file_data:
             related_row = row.copy()
             for row_field in row.keys():
