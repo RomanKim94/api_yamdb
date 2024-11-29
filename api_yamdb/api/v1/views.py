@@ -1,7 +1,9 @@
+from django.db.models import Avg
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 
 from reviews.models import Category, Genre, Title
+from .filters import TitleFilter
 from .permissions import IsAdminOrReadOnly
 from .serializers import (
     CategorySerializer,
@@ -25,8 +27,11 @@ class GenreViewSet(ListCreateDeleteViewset):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Представление для произведений."""
-    queryset = Title.objects.all()
+    http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name', '-year').all()
     serializer_class = TitleSerializer
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    filterset_fields = ('name', 'year', 'category__slug', 'genre__slug')
+    filterset_class = TitleFilter
