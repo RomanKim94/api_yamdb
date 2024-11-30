@@ -15,18 +15,21 @@ from .viewsets import ListCreateDeleteViewset
 
 class CategoryViewSet(ListCreateDeleteViewset):
     """Представление для категорий."""
+
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
 class GenreViewSet(ListCreateDeleteViewset):
     """Представление для жанров."""
+
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Представление для произведений."""
+
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')

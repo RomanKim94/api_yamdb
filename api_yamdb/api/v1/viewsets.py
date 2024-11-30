@@ -8,6 +8,7 @@ class ListCreateDeleteViewset(mixins.ListModelMixin,
                               mixins.DestroyModelMixin,
                               viewsets.GenericViewSet):
     """Базовый вьюсет для категорий и жанров."""
+
     permission_classes = (IsAdminOrReadOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)

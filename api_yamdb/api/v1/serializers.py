@@ -33,6 +33,7 @@ class TitleSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(read_only=True, default=None)
 
     def to_representation(self, instance):
+        """Настройка показа категорий и жанров в формате: имя, слаг."""
         representation = super().to_representation(instance)
         representation['category'] = CategorySerializer(
             instance.category).data
