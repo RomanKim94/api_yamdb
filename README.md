@@ -71,6 +71,25 @@ python manage.py migrate
 python manage.py runserver
 ```
 
+## Фикстуры
+Фикстуры храняться в csv-файлах, расположенных в "api_yamdb/static/data".  
+Фикстуры для модели Title в файле "titles.csv".  
+Фикстуры для модели Category в файле "category.csv".  
+Фикстуры для модели Genre в файле "genre.csv".  
+Фикстуры для модели Review в файле "review.csv".  
+Фикстуры для модели Comment в файле "comments.csv".  
+Фикстуры для модели User в файле "users.csv".  
+Фикстуры для промежуточной модели Title_Genre в файле "genre_title.csv".  
+
+## Management команды
+Для создания записей в базе данных на основе фикстур, необходимо из директории "api_yamdb", в которой расположен файл "manage.py", запустить менеджмент команду:  
+```
+python manage.py load_csv
+```
+Для создания записей по нескольким файлам, указать необходимые файлы в конце команды, в виде `python manage.py load_csv <file_name> <file_name>`. Пример:
+```
+python manage.py load_csv category.csv comments.csv
+```
 
 ## Примеры запросов:
 
