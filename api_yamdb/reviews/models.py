@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-import constants as const
+from core import constants as const
 
 User = get_user_model()
 
