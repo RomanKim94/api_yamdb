@@ -1,7 +1,7 @@
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 
-from reviews.models import Review, Comment
+from reviews.models import Comment, Review
 from constants import SCORE_VALIDATION_ERROR
 
 
