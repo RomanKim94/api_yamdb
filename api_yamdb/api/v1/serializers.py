@@ -4,7 +4,7 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
 from reviews.models import Category, Comment, Genre, Review, Title
-from constants import SCORE_VALIDATION_ERROR
+from core.constants import SCORE_VALIDATION_ERROR
 
 
 class CategorySerializer(serializers.ModelSerializer):
