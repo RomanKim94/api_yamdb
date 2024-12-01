@@ -5,5 +5,5 @@ NAME_TITLE_LENGTH = 100
 INVALID_USERNAME = 'me'
 
 CONFIRMATION_CODE_LENGTH = 10
-CONFIRMATION_CODE_EMAIL_BODY = 'confirmation_code_email_body.txt'
-CONFIRMATION_CODE_EMAIL_SUBJECT = 'confirmation_code_email_subject.txt'
+CONFIRMATION_EMAIL_BODY = 'confirmation_code_email_body.txt'
+CONFIRMATION_EMAIL_SUBJECT = 'confirmation_code_email_subject.txt'

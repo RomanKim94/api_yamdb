@@ -1,5 +1,4 @@
 from django.contrib.auth.models import AbstractUser
-from django.core.exceptions import ValidationError
 from django.db import models
 
 from core import (
@@ -18,18 +17,38 @@ class User(AbstractUser):
         (USER, 'Пользователь'),
     )
 
-    password = models.CharField('Пароль', blank=True, max_length=128)
+    password = models.CharField(
+        'Пароль',
+        max_length=128,
+        blank=True,
+        null=True,
+    )
     email = models.EmailField('Email', unique=True)
     bio = models.TextField('Биография', blank=True)
     role = models.CharField(
-        'Роль', choices=ROLES_CHOICES, default=USER, max_length=9
+        'Роль',
+        max_length=9,
+        choices=ROLES_CHOICES,
+        default=USER,
     )
     confirmation_code = models.CharField(
         'Код подтверждения',
         blank=True,
         max_length=const.CONFIRMATION_CODE_LENGTH,
-        validators=(validators.ConfirmationCodeValidator,)
+        validators=(validators.ConfirmationCodeValidator,),
     )
+
+    class Meta(AbstractUser.Meta):
+        constraints = (
+            models.UniqueConstraint(
+                fields=('username', 'email',),
+                name='unique_username_email',
+            ),
+        )
+
+    @property
+    def is_user(self):
+        return self.role == self.USER
 
     @property
     def is_moderator(self):
@@ -39,9 +58,10 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == self.ADMIN
 
-    def clean_fields(self, exclude=None):
-        super().clean_fields(exclude=exclude)
-        if self.username.lower() == const.INVALID_USERNAME:
-            raise ValidationError({
-                'username': f'Недопустимое имя пользователя "{self.username}"',
-            })
+    def save(self, *args, **kwargs):
+        if self.username and self.username.lower() == const.INVALID_USERNAME:
+            raise ValueError(
+                f'Недопустимое имя пользователя \'{self.username}\''
+            )
+
+        super(User, self).save(*args, **kwargs)

@@ -1,17 +1,18 @@
 from rest_framework import (
-    mixins,
-    pagination,
+    filters,
     generics,
-    viewsets,
-    views,
+    permissions,
     status,
+    views,
+    viewsets,
 )
+from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
 from core import permissions as api_permissions, utils
-from . import serializers
-from ..models import User
+from users import models
+from users.v1 import serializers
 
 
 class UserModelViewSet(viewsets.ModelViewSet):
@@ -19,44 +20,63 @@ class UserModelViewSet(viewsets.ModelViewSet):
 
     API доступно только администратору.
     """
-    queryset = User.objects.all()
+
+    queryset = models.User.objects.all()
     serializer_class = serializers.UserSerializer
-    pagination_class = pagination.LimitOffsetPagination
-    permission_classes = (api_permissions.IsAdmin,)
+    permission_classes = (api_permissions.AdminsPermissions,)
     lookup_url_kwarg = 'username'
+    lookup_field = 'username'
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+    http_method_names = ('get', 'post', 'patch', 'delete',)
 
+    @action(methods=('get', 'patch',),
+            detail=False,
+            url_name='profile',
+            url_path='me',
+            permission_classes=(permissions.IsAuthenticated,))
+    def profile(self, request, *args, **kwargs):
+        """API Профиля пользователя.
 
-class ProfileModelViewSet(mixins.RetrieveModelMixin,
-                          mixins.UpdateModelMixin,
-                          viewsets.GenericViewSet):
-    """Представление для API Профиля пользователя.
+        API доступно только для авторизованного пользователя.
+        """
+        if request.method == 'GET':
+            return self.retrieve(request, *args, **kwargs)
 
-    API доступно только для авторизованного пользователя.
-    """
-    serializer_class = serializers.ProfileSerializer
+        return self.partial_update(request, *args, **kwargs)
 
     def get_object(self):
-        return self.request.user
+        if self.action == self.profile.__name__:
+            return self.request.user
+
+        return super(UserModelViewSet, self).get_object()
+
+    def get_serializer_class(self):
+        if self.action == self.profile.__name__:
+            return serializers.ProfileSerializer
+
+        return super(UserModelViewSet, self).get_serializer_class()
 
 
 class TokenApiView(views.APIView):
     """Представление для генерации токена аунтентификации.
 
-    Доступно для авторизованного пользователя.
+    Доступно для не авторизованного пользователя.
     """
 
     def post(self, request, *args, **kwargs):
         serializer = serializers.UsernameConfirmationCodeSerializer(
-            request.data
+            data=request.data
         )
         serializer.is_valid(raise_exception=True)
-        data = serializer.data
-        user = generics.get_object_or_404(User, username=data.get('username'))
+        user = generics.get_object_or_404(
+            models.User, username=request.data.get('username')
+        )
 
-        if user.confirmation_code != data.get('confirmation_code'):
-            raise ValidationError(f'Некорректный код подтверждения.'
+        if user.confirmation_code != request.data.get('confirmation_code'):
+            raise ValidationError(f'Некорректный код подтверждения. '
                                   f'Укажите код переданный на электронную '
-                                  f'почту {user.email} при регистрации,'
+                                  f'почту {user.email} при регистрации, '
                                   f'либо сгенерируйте новый путём повторной '
                                   f'отправки запроса на регистрацию.')
 
@@ -66,16 +86,28 @@ class TokenApiView(views.APIView):
         )
 
 
-class SignUpApiView(generics.CreateAPIView):
+class SignUpApiView(views.APIView):
     """Представление для самостоятельной регистрации.
 
     Создает нового пользователя, с дальнейшей отправкой на указанный email
     кода подтверждения. При повторном запросе происходит обновление
     кода подтверждения с повторной отправкой на email.
     """
-    serializer_class = serializers.UserSignupSerializer
 
-    def perform_create(self, serializer):
-        confirmation_code = utils.generate_confirmation_code()
-        user = serializer.save(confirmation_code=confirmation_code)
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        email = request.data.get('email')
+        user = models.User.objects.filter(username=username,
+                                          email=email).first()
+        serializer = serializers.UserSignupSerializer(data=request.data)
+
+        if user:
+            serializer.instance = user
+
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save(
+            confirmation_code=utils.generate_confirmation_code()
+        )
         utils.send_confirmation_email(user)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
