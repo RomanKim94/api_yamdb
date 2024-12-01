@@ -1,10 +1,49 @@
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-from api.v1.permissions import IsNotSimpleUserOrAuthorOrCreateOnly
-from api.v1.serializers import CommentSerializer, ReviewSerializer
-from reviews.models import Review, Title
+
+from api.v1.filters import TitleFilter
+from api.v1.permissions import (
+    IsAdminOrReadOnly, IsNotSimpleUserOrAuthorOrCreateOnly,
+)
+
+from api.v1.serializers import (
+    CategorySerializer, CommentSerializer,
+    GenreSerializer, ReviewSerializer,
+    TitleSerializer,
+)
+from api.v1.viewsets import ListCreateDeleteViewset
+from reviews.models import Category, Genre, Review, Title
+
+
+class CategoryViewSet(ListCreateDeleteViewset):
+    """Представление для категорий."""
+
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+
+class GenreViewSet(ListCreateDeleteViewset):
+    """Представление для жанров."""
+
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+
+
+class TitleViewSet(viewsets.ModelViewSet):
+    """Представление для произведений."""
+
+    http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name', '-year').all()
+    serializer_class = TitleSerializer
+    permission_classes = (IsAdminOrReadOnly,)
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
+    filterset_class = TitleFilter
 
 
 class ReviewViewSet(viewsets.ModelViewSet):

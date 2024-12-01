@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-import constants as const
+from core import constants as const
 
 User = get_user_model()
 
@@ -114,7 +114,7 @@ class Title(models.Model):
         on_delete=models.SET_NULL,
         null=True,
     )
-    genres = models.ManyToManyField(Genre, verbose_name='Жанр')
+    genre = models.ManyToManyField(Genre, verbose_name='Жанр')
 
     class Meta:
         verbose_name = 'Произведение'
