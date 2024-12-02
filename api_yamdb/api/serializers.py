@@ -82,7 +82,13 @@ class ReviewSerializer(serializers.ModelSerializer):
         '''Валидация поля score на соответствие диапазону от 1 до 10.'''
         if MIN_SCORE_VALUE > score or score > MAX_SCORE_VALUE:
             raise ValidationError(
-                {'score': SCORE_VALIDATION_ERROR.format(score=score)}
+                {
+                    'score': SCORE_VALIDATION_ERROR.format(
+                        score=score,
+                        minimum=MIN_SCORE_VALUE,
+                        maximum=MAX_SCORE_VALUE,
+                    )
+                }
             )
         return score
 

@@ -56,7 +56,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == self.ADMIN
+        return self.role == self.ADMIN or self.is_staff
 
     def save(self, *args, **kwargs):
         if self.username and self.username.lower() == const.INVALID_USERNAME:

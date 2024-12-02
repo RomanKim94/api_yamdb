@@ -25,6 +25,7 @@ class ReviewComment(models.Model):
     class Meta:
         abstract = True
         ordering = ('-pub_date',)
+        default_related_name = '%(class)ss'
 
 
 class NameSlug(models.Model):
@@ -42,6 +43,7 @@ class NameSlug(models.Model):
     class Meta:
         abstract = True
         ordering = ('name',)
+        default_related_name = '%(class)ss'
 
     def __str__(self):
         return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
@@ -49,14 +51,14 @@ class NameSlug(models.Model):
 
 class Genre(NameSlug):
 
-    class Meta:
+    class Meta(NameSlug.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
 
 class Category(NameSlug):
 
-    class Meta:
+    class Meta(NameSlug.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
@@ -101,10 +103,9 @@ class Review(ReviewComment):
             MinValueValidator(MIN_SCORE_VALUE),
             MaxValueValidator(MAX_SCORE_VALUE)))
 
-    class Meta:
+    class Meta(ReviewComment.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
-        default_related_name = 'reviews'
         constraints = (
             models.UniqueConstraint(
                 fields=('title', 'author'),
@@ -123,10 +124,9 @@ class Comment(ReviewComment):
         on_delete=models.CASCADE,
     )
 
-    class Meta:
+    class Meta(ReviewComment.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-        default_related_name = 'comments'
 
     def __str__(self):
         return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'

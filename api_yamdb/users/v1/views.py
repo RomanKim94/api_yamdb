@@ -10,7 +10,8 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from core import permissions as api_permissions, utils
+from . import permissions as api_permissions
+from core import utils
 from users import models
 from users.v1 import serializers
 
