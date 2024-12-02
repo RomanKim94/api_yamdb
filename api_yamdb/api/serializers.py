@@ -4,7 +4,10 @@ from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
 from reviews.models import Category, Comment, Genre, Review, Title
-from core.constants import DOUBLE_REVIEW_ERROR, SCORE_VALIDATION_ERROR
+from reviews.constants import (
+    DOUBLE_REVIEW_ERROR, SCORE_VALIDATION_ERROR,
+    MIN_SCORE_VALUE, MAX_SCORE_VALUE,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -70,14 +73,14 @@ class ReviewSerializer(serializers.ModelSerializer):
         request = self.context['request']
         if request.method == 'POST' and Review.objects.filter(
             title_id=self.context['view'].kwargs['title_id'],
-            author_id=request.user.id,
+            author=request.user,
         ).exists():
             raise ValidationError(DOUBLE_REVIEW_ERROR)
         return super().validate(attrs)
 
     def validate_score(self, score):
         '''Валидация поля score на соответствие диапазону от 1 до 10.'''
-        if 1 > score or score > 10:
+        if MIN_SCORE_VALUE > score or score > MAX_SCORE_VALUE:
             raise ValidationError(
                 {'score': SCORE_VALIDATION_ERROR.format(score=score)}
             )

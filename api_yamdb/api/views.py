@@ -4,12 +4,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets
 from rest_framework.permissions import IsAuthenticatedOrReadOnly
 
-
 from api.filters import TitleFilter
 from api.permissions import (
-    IsAdminOrReadOnly, IsNotSimpleUserOrAuthorOrCreateOnly,
+    IsAdminOrReadOnly, IsSuperuserOrAdminOrModeratorOrAuthor
 )
-
 from api.serializers import (
     CategorySerializer, CommentSerializer,
     GenreSerializer, ReviewSerializer,
@@ -50,7 +48,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     '''Вьюсет для работы с отзывами.'''
     serializer_class = ReviewSerializer
     permission_classes = (
-        IsAuthenticatedOrReadOnly, IsNotSimpleUserOrAuthorOrCreateOnly,
+        IsAuthenticatedOrReadOnly,
+        IsSuperuserOrAdminOrModeratorOrAuthor,
     )
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 
