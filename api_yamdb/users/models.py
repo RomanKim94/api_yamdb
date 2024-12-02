@@ -1,8 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from reviews import constants as const
 from core import (
-    constants as const,
     validators,
 )
 

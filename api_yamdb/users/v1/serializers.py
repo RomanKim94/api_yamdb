@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from core import constants, validators
+from reviews import constants
+from core import validators
 from users.models import User
 
 

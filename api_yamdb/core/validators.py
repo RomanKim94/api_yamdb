@@ -1,7 +1,7 @@
 from django.core import validators
 from django.utils.deconstruct import deconstructible
 
-from core.constants import CONFIRMATION_CODE_REGEX
+from reviews.constants import CONFIRMATION_CODE_REGEX
 
 
 @deconstructible

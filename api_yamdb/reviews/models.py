@@ -3,9 +3,9 @@ from django.core.validators import (
     MaxValueValidator, MinValueValidator)
 from django.db import models
 
-from core import constants as const
-from reviews.constants import MAX_SCORE_VALUE, MIN_SCORE_VALUE
-from reviews.validators import validate_year
+from . import constants as const
+from .constants import MAX_SCORE_VALUE, MIN_SCORE_VALUE
+from .validators import validate_year
 
 User = get_user_model()
 
