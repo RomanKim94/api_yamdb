@@ -63,6 +63,7 @@ class TokenApiView(views.APIView):
 
     Доступно для не авторизованного пользователя.
     """
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         serializer = serializers.UsernameConfirmationCodeSerializer(
@@ -93,6 +94,7 @@ class SignUpApiView(views.APIView):
     кода подтверждения. При повторном запросе происходит обновление
     кода подтверждения с повторной отправкой на email.
     """
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')

@@ -52,6 +52,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = (
         IsAuthenticatedOrReadOnly, IsNotSimpleUserOrAuthorOrCreateOnly,
     )
+    http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 
     def get_title(self):
         '''Метод возвращает объект произведения по id полученного из url.'''
