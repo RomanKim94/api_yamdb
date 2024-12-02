@@ -3,10 +3,10 @@ from rest_framework import filters, mixins, viewsets
 from .permissions import IsAdminOrReadOnly
 
 
-class ListCreateDeleteViewset(mixins.ListModelMixin,
-                              mixins.CreateModelMixin,
-                              mixins.DestroyModelMixin,
-                              viewsets.GenericViewSet):
+class CategoryGenreViewset(mixins.ListModelMixin,
+                           mixins.CreateModelMixin,
+                           mixins.DestroyModelMixin,
+                           viewsets.GenericViewSet):
     """Базовый вьюсет для категорий и жанров."""
 
     permission_classes = (IsAdminOrReadOnly,)

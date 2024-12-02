@@ -1,5 +1,4 @@
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
@@ -26,8 +25,21 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    """Сериализатор произведений."""
+class TitleReadSerializer(serializers.ModelSerializer):
+    """Сериализатор для произведений (чтение)."""
+
+    category = CategorySerializer()
+    genre = GenreSerializer(many=True)
+    rating = serializers.IntegerField(default=None)
+
+    class Meta:
+        model = Title
+        fields = ('id', 'name', 'year', 'rating', 'description',
+                  'genre', 'category')
+
+
+class TitleWrightSerializer(serializers.ModelSerializer):
+    """Сериализатор для произведений (запись)."""
 
     category = SlugRelatedField(
         slug_field='slug',
@@ -37,26 +49,14 @@ class TitleSerializer(serializers.ModelSerializer):
         queryset=Genre.objects.all())
     rating = serializers.IntegerField(read_only=True, default=None)
 
-    def to_representation(self, instance):
-        """Настройка показа категорий и жанров в формате: имя, слаг."""
-        representation = super().to_representation(instance)
-        representation['category'] = CategorySerializer(
-            instance.category).data
-        representation['genre'] = GenreSerializer(
-            instance.genre, many=True).data
-        return representation
-
-    def validate_year(self, year):
-        """Валидация поля года издания произведения."""
-        if year > timezone.now().year:
-            raise serializers.ValidationError(
-                'Год произведения не может быть больше текущего')
-        return year
-
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
+
+    def to_representation(self, instance):
+        """Настройка показа категорий и жанров в формате: имя, слаг."""
+        return TitleReadSerializer(instance).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):

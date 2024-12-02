@@ -1,12 +1,16 @@
 from django.contrib.auth import get_user_model
+from django.core.validators import (
+    MaxValueValidator, MinValueValidator)
 from django.db import models
 
 from core import constants as const
+from reviews.constants import MAX_SCORE_VALUE, MIN_SCORE_VALUE
+from reviews.validators import validate_year
 
 User = get_user_model()
 
 
-class PubDate(models.Model):
+class ReviewComment(models.Model):
     text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User,
@@ -20,6 +24,7 @@ class PubDate(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('-pub_date',)
 
 
 class NameSlug(models.Model):
@@ -36,6 +41,10 @@ class NameSlug(models.Model):
 
     class Meta:
         abstract = True
+        ordering = ('name',)
+
+    def __str__(self):
+        return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
 
 
 class Genre(NameSlug):
@@ -43,10 +52,6 @@ class Genre(NameSlug):
     class Meta:
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
-        ordering = ('name',)
-
-    def __str__(self):
-        return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
 
 
 class Category(NameSlug):
@@ -54,59 +59,16 @@ class Category(NameSlug):
     class Meta:
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
-        ordering = ('name',)
-
-    def __str__(self):
-        return f'name: {self.name[:const.STRING_SHOW]} slug: {self.slug}'
-
-
-class Review(PubDate):
-    title = models.ForeignKey(
-        'Title',
-        verbose_name='Произведение',
-        on_delete=models.CASCADE,
-    )
-    score = models.PositiveSmallIntegerField(verbose_name='Рейтинг')
-
-    class Meta:
-        verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы'
-        ordering = ('-pub_date',)
-        default_related_name = 'reviews'
-        constraints = (
-            models.UniqueConstraint(
-                fields=('title', 'author'),
-                name='unique_review',
-            ),
-        )
-
-    def __str__(self):
-        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
-
-
-class Comment(PubDate):
-    review = models.ForeignKey(
-        Review,
-        verbose_name='Отзыв',
-        on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        verbose_name = 'Комментарий'
-        verbose_name_plural = 'Комментарии'
-        ordering = ('-pub_date',)
-        default_related_name = 'comments'
-
-    def __str__(self):
-        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
 
 
 class Title(models.Model):
     name = models.CharField(
-        verbose_name='Название произведения',
+        verbose_name='Название',
         max_length=const.NAME_TITLE_LENGTH,
     )
-    year = models.PositiveSmallIntegerField(verbose_name='Год производства')
+    year = models.PositiveSmallIntegerField(
+        verbose_name='Год производства',
+        validators=(validate_year,))
     description = models.TextField(verbose_name='Описание', blank=True)
     category = models.ForeignKey(
         Category,
@@ -119,9 +81,52 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
-        ordering = ('name', '-year',)
+        ordering = ('-year',)
         default_related_name = 'titles'
 
     def __str__(self):
         return (f'name: {self.name[:const.STRING_SHOW]} '
                 f'category: {self.category}')
+
+
+class Review(ReviewComment):
+    title = models.ForeignKey(
+        Title,
+        verbose_name='Произведение',
+        on_delete=models.CASCADE,
+    )
+    score = models.PositiveSmallIntegerField(
+        verbose_name='Рейтинг',
+        validators=(
+            MinValueValidator(MIN_SCORE_VALUE),
+            MaxValueValidator(MAX_SCORE_VALUE)))
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        default_related_name = 'reviews'
+        constraints = (
+            models.UniqueConstraint(
+                fields=('title', 'author'),
+                name='unique_review',
+            ),
+        )
+
+    def __str__(self):
+        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
+
+
+class Comment(ReviewComment):
+    review = models.ForeignKey(
+        Review,
+        verbose_name='Отзыв',
+        on_delete=models.CASCADE,
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
+
+    def __str__(self):
+        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
