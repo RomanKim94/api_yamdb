@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, SAFE_METHODS
 
 from api.filters import TitleFilter
 from api.permissions import (
-    IsAdminOrReadOnly, IsSuperuserOrAdminOrModeratorOrAuthor
+    IsAdminOrReadOnly, IsSuperuserOrAdminOrModeratorOrAuthorOrReadOnly
 )
 from api.serializers import (
     CategorySerializer, CommentSerializer,
@@ -51,7 +51,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (
         IsAuthenticatedOrReadOnly,
-        IsSuperuserOrAdminOrModeratorOrAuthor,
+        IsSuperuserOrAdminOrModeratorOrAuthorOrReadOnly,
     )
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 

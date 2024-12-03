@@ -1,3 +1,5 @@
+from django.conf import settings
+import random
 from rest_framework import (
     filters,
     generics,
@@ -9,6 +11,7 @@ from rest_framework import (
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from . import permissions as api_permissions
 from core import utils
@@ -83,7 +86,7 @@ class TokenApiView(views.APIView):
                                   f'отправки запроса на регистрацию.')
 
         return Response(
-            {'token': utils.get_token_for_user(user)},
+            {'token': str(RefreshToken.for_user(user).access_token)},
             status=status.HTTP_200_OK,
         )
 
@@ -109,7 +112,10 @@ class SignUpApiView(views.APIView):
 
         serializer.is_valid(raise_exception=True)
         user = serializer.save(
-            confirmation_code=utils.generate_confirmation_code()
+            confirmation_code=''.join(random.choices(
+                settings.CONFIRMATION_CODE_SYMBOLS,
+                k=settings.CONFIRMATION_CODE_LENGTH,
+            ))
         )
         utils.send_confirmation_email(user)
 

@@ -1,7 +1,7 @@
 from rest_framework import permissions
 
 
-class IsSuperuserOrAdminOrModeratorOrAuthor(
+class IsSuperuserOrAdminOrModeratorOrAuthorOrReadOnly(
     permissions.BasePermission,
 ):
     """

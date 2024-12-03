@@ -1,5 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
+import string
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -113,3 +114,9 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'tmp/messages/'
+
+INVALID_USERNAME = 'me'
+MAX_USERNAME_LENGTH = 150
+CONFIRMATION_CODE_LENGTH = 10
+CONFIRMATION_CODE_REGEX = r'^[A-Z\d]{%d}$' % CONFIRMATION_CODE_LENGTH
+CONFIRMATION_CODE_SYMBOLS = string.ascii_uppercase + string.digits

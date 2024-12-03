@@ -1,9 +1,19 @@
+from django.conf import settings
+from django.core import validators
+from django.core.exceptions import ValidationError
 from rest_framework import serializers
-from rest_framework.validators import UniqueTogetherValidator
 
-from reviews import constants
-from core import validators
+from reviews.constants import USERNAME_VALIDATION_ERROR
 from users.models import User
+
+
+def validate_username(username):
+    if username == settings.INVALID_USERNAME:
+        ValidationError(USERNAME_VALIDATION_ERROR.format(
+            invalid_username=settings.INVALID_USERNAME,
+        ))
+    User.username_validator(username)
+    return username
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -13,36 +23,42 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name',
                   'bio', 'role',)
-        validators = (
-            UniqueTogetherValidator(
-                queryset=User.objects.all(),
-                fields=('username', 'email',),
-            ),
-        )
+
+    def validate(self, attrs):
+        validate_username(attrs.get('username'))
+        return super().validate(attrs)
 
 
 class ProfileSerializer(UserSerializer):
     """Сериалайзер для отображения и изменения Профиля пользователя."""
 
     class Meta(UserSerializer.Meta):
-        extra_kwargs = {
-            'role': {'read_only': True},
-        }
+        read_only_fields = ('role',)
 
 
-class UserSignupSerializer(serializers.ModelSerializer):
+class UserSignupSerializer(serializers.Serializer):
     """Сериалайзер для регистрации Пользователя."""
 
-    class Meta:
-        model = User
-        fields = ('username', 'email',)
+    username = serializers.CharField(
+        validators=(User.username_validator,),
+        max_length=settings.MAX_USERNAME_LENGTH,
+    )
+    email = serializers.EmailField()
 
-    def validate_username(self, value):
-        if value.lower() == constants.INVALID_USERNAME:
-            raise serializers.ValidationError(
-                f'Недопустимое имя пользователя \'{value}\''
-            )
-        return value
+    def validate(self, attrs):
+        validate_username(attrs.get('username'))
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        """
+        Создаёт или обновляет пользователя с переданным `username` и `email`.
+        """
+        user, _ = User.objects.update_or_create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            defaults=validated_data,
+        )
+        return user
 
 
 class UsernameConfirmationCodeSerializer(serializers.Serializer):
@@ -50,8 +66,15 @@ class UsernameConfirmationCodeSerializer(serializers.Serializer):
 
     username = serializers.CharField(
         validators=(User.username_validator,),
-        max_length=150,
+        max_length=settings.MAX_USERNAME_LENGTH,
     )
     confirmation_code = serializers.CharField(
-        validators=(validators.ConfirmationCodeValidator,)
+        validators=(validators.RegexValidator(
+            regex=settings.CONFIRMATION_CODE_REGEX,
+            message=(
+                'Некорректный код подтверждения.'
+                'Значение кода длинной 10 символов'
+                'состоит из прописных латинских символов и десятичных цифр.'
+            )
+        ),)
     )

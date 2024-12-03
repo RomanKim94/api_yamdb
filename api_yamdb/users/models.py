@@ -1,10 +1,7 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
+from django.core import validators
 from django.db import models
-
-from reviews import constants as const
-from core import (
-    validators,
-)
 
 
 class User(AbstractUser):
@@ -34,8 +31,15 @@ class User(AbstractUser):
     confirmation_code = models.CharField(
         'Код подтверждения',
         blank=True,
-        max_length=const.CONFIRMATION_CODE_LENGTH,
-        validators=(validators.ConfirmationCodeValidator,),
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        validators=(validators.RegexValidator(
+            regex=settings.CONFIRMATION_CODE_REGEX,
+            message=(
+                'Некорректный код подтверждения.'
+                'Значение кода длинной 10 символов'
+                'состоит из прописных латинских символов и десятичных цифр.'
+            )
+        ),),
     )
 
     class Meta(AbstractUser.Meta):
@@ -59,7 +63,10 @@ class User(AbstractUser):
         return self.role == self.ADMIN or self.is_staff
 
     def save(self, *args, **kwargs):
-        if self.username and self.username.lower() == const.INVALID_USERNAME:
+        if (
+            self.username
+            and self.username.lower() == settings.INVALID_USERNAME
+        ):
             raise ValueError(
                 f'Недопустимое имя пользователя \'{self.username}\''
             )
