@@ -1,19 +1,15 @@
-from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
-from reviews.models import Category, Comment, Genre, Review, Title
-from reviews.constants import (
-    DOUBLE_REVIEW_ERROR, SCORE_VALIDATION_ERROR,
-    MIN_SCORE_VALUE, MAX_SCORE_VALUE,
-)
+from api import constants as const
+from reviews import models
 
 
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категорий."""
 
     class Meta:
-        model = Category
+        model = models.Category
         fields = ('name', 'slug')
 
 
@@ -21,7 +17,7 @@ class GenreSerializer(serializers.ModelSerializer):
     """Сериализатор жанров."""
 
     class Meta:
-        model = Genre
+        model = models.Genre
         fields = ('name', 'slug')
 
 
@@ -33,7 +29,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
     rating = serializers.IntegerField(default=None)
 
     class Meta:
-        model = Title
+        model = models.Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
 
@@ -43,14 +39,14 @@ class TitleWrightSerializer(serializers.ModelSerializer):
 
     category = SlugRelatedField(
         slug_field='slug',
-        queryset=Category.objects.all())
+        queryset=models.Category.objects.all())
     genre = SlugRelatedField(
         slug_field='slug', many=True, allow_null=False, allow_empty=False,
-        queryset=Genre.objects.all())
+        queryset=models.Genre.objects.all())
     rating = serializers.IntegerField(read_only=True, default=None)
 
     class Meta:
-        model = Title
+        model = models.Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
 
@@ -65,28 +61,29 @@ class ReviewSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Review
+        model = models.Review
         fields = ('id', 'author', 'text', 'score', 'pub_date',)
         read_only_fields = ('pub_date',)
 
     def validate(self, attrs):
         request = self.context['request']
-        if request.method == 'POST' and Review.objects.filter(
+        if request.method == 'POST' and models.Review.objects.filter(
             title_id=self.context['view'].kwargs['title_id'],
             author=request.user,
         ).exists():
-            raise ValidationError(DOUBLE_REVIEW_ERROR)
+            raise serializers.ValidationError(const.DOUBLE_REVIEW_ERROR)
         return super().validate(attrs)
 
     def validate_score(self, score):
-        '''Валидация поля score на соответствие диапазону от 1 до 10.'''
-        if MIN_SCORE_VALUE > score or score > MAX_SCORE_VALUE:
-            raise ValidationError(
+        """Валидация поля score на соответствие диапазону от 1 до 10."""
+
+        if const.MIN_SCORE_VALUE > score or score > const.MAX_SCORE_VALUE:
+            raise serializers.ValidationError(
                 {
-                    'score': SCORE_VALIDATION_ERROR.format(
+                    'score': const.SCORE_VALIDATION_ERROR.format(
                         score=score,
-                        minimum=MIN_SCORE_VALUE,
-                        maximum=MAX_SCORE_VALUE,
+                        minimum=const.MIN_SCORE_VALUE,
+                        maximum=const.MAX_SCORE_VALUE,
                     )
                 }
             )
@@ -99,6 +96,44 @@ class CommentSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Comment
+        model = models.Comment
         fields = ('id', 'text', 'author', 'pub_date',)
         read_only_fields = ('pub_date',)
+
+
+class UserSerializer(serializers.ModelSerializer):
+    """Сериалайзер для отображения Пользователей и действий на ними."""
+
+    class Meta:
+        model = models.User
+        fields = ('username', 'email', 'first_name', 'last_name',
+                  'bio', 'role',)
+
+
+class ProfileSerializer(UserSerializer):
+    """Сериалайзер для отображения и изменения Профиля пользователя."""
+
+    class Meta(UserSerializer.Meta):
+        extra_kwargs = {
+            'role': {'read_only': True},
+        }
+
+
+class UserSignupSerializer(serializers.ModelSerializer):
+    """Сериалайзер для регистрации Пользователя."""
+
+    class Meta:
+        model = models.User
+        fields = ('username', 'email',)
+
+
+class UsernameConfirmationCodeSerializer(serializers.Serializer):
+    """Сериалайзер для валидации данных для получении токена."""
+
+    username = serializers.CharField(
+        validators=(models.User.username_validator,),
+        max_length=150,
+    )
+    confirmation_code = serializers.CharField(
+        validators=()
+    )

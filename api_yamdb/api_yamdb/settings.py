@@ -21,7 +21,6 @@ INSTALLED_APPS = [
     'django_filters',
 
     'api.apps.ApiConfig',
-    'users.apps.UsersConfig',
     'reviews.apps.ReviewsConfig',
 ]
 
@@ -96,9 +95,9 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'reviews.User'
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
 

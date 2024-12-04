@@ -1,26 +1,29 @@
 from rest_framework.routers import SimpleRouter
 from django.urls import include, path
 
-from .views import (
-    CategoryViewSet, CommentViewSet,
-    GenreViewSet, ReviewViewSet, TitleViewSet
-)
+from . import views
 
 router_v1 = SimpleRouter()
-router_v1.register('categories', CategoryViewSet, basename='categories')
-router_v1.register('genres', GenreViewSet, basename='genres')
-router_v1.register('titles', TitleViewSet, basename='titles')
+router_v1.register('users', views.UserModelViewSet, basename='users')
+router_v1.register('categories', views.CategoryViewSet, basename='categories')
+router_v1.register('genres', views.GenreViewSet, basename='genres')
+router_v1.register('titles', views.TitleViewSet, basename='titles')
 router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews/(?P<review_id>\d+)/comments',
-    CommentViewSet, basename='comments',
+    views.CommentViewSet, basename='comments',
 )
 router_v1.register(
     r'titles/(?P<title_id>\d+)/reviews',
-    ReviewViewSet, basename='reviews',
+    views.ReviewViewSet, basename='reviews',
 )
 
 app_name = 'api'
 urlpatterns = [
-    path('v1/', include('users.v1.urls')),
-    path('v1/', include(router_v1.urls)),
+    path('v1/', include([
+        path('', include(router_v1.urls)),
+        path('auth/', include([
+            path('token/', views.TokenApiView.as_view(), name='token'),
+            path('signup/', views.SignUpApiView.as_view(), name='signup'),
+        ])),
+    ])),
 ]
