@@ -8,8 +8,6 @@ DOUBLE_REVIEW_ERROR = 'Можно оставлять только один от�
 
 MIN_SCORE_VALUE = 1
 MAX_SCORE_VALUE = 10
-SCORE_VALIDATION_ERROR = ('Оценка {score} не соответствует диапазону от '
-                          f'{MIN_SCORE_VALUE} до {MAX_SCORE_VALUE}')
 
 
 class HTTPMethod:

@@ -76,7 +76,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = api_serializers.ReviewSerializer
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        api_permissions.IsSuperuserOrAdminOrModeratorOrAuthor,
+        api_permissions.IsAdminOrModeratorOrAuthor,
     )
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 
@@ -91,17 +91,24 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=self.get_title())
 
 
-class CommentViewSet(ReviewViewSet):
+class CommentViewSet(viewsets.ModelViewSet):
     """Представление для комментариев."""
 
     serializer_class = api_serializers.CommentSerializer
+    permission_classes = (
+        permissions.IsAuthenticatedOrReadOnly,
+        api_permissions.IsAdminOrModeratorOrAuthor,
+    )
+    http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 
     def get_review(self):
         '''
         Метод возвращает объект отзыва к произведению по id полученного из url.
         '''
         return get_object_or_404(
-            models.Review, title=self.get_title(), pk=self.kwargs['review_id']
+            models.Review,
+            title=ReviewViewSet.get_title(),
+            pk=self.kwargs['review_id'],
         )
 
     def perform_create(self, serializer):
