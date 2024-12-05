@@ -1,5 +1,6 @@
 import re
 
+from django.conf import settings
 from django.core import validators
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -22,12 +23,12 @@ class User(AbstractUser):
 
     username = models.CharField(
         'Имя пользователя',
-        max_length=const.USERNAME_LENGTH,
+        max_length=settings.USERNAME_LENGTH,
         unique=True,
         validators=(
             AbstractUser.username_validator,
             validators.RegexValidator(
-                regex=const.USERNAME_REGEX,
+                regex=settings.USERNAME_INVALID_REGEX,
                 inverse_match=True,
                 message='Недопустимое имя пользователя.',
                 flags=re.IGNORECASE
@@ -36,11 +37,15 @@ class User(AbstractUser):
     )
     password = models.CharField(
         'Пароль',
-        max_length=const.PASSWORD_LENGTH,
+        max_length=settings.PASSWORD_LENGTH,
         blank=True,
         null=True,
     )
-    email = models.EmailField('Email', unique=True)
+    email = models.EmailField(
+        'Email',
+        unique=True,
+        max_length=settings.EMAIL_LENGTH,
+    )
     bio = models.TextField('Биография', blank=True)
     role = models.CharField(
         'Роль',
@@ -51,11 +56,11 @@ class User(AbstractUser):
     confirmation_code = models.CharField(
         'Код подтверждения',
         blank=True,
-        max_length=const.CONFIRMATION_CODE_LENGTH,
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
         validators=(
             validators.RegexValidator(
-                regex=const.CONFIRMATION_CODE_REGEX,
-                message='Некорректный код подтверждения.',
+                regex=settings.CONFIRMATION_CODE_REGEX,
+                message=const.CONFIRMATION_CODE_ERROR
             ),
         )
     )

@@ -1,3 +1,7 @@
+import re
+
+from django.conf import settings
+from django.core import validators
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
@@ -119,21 +123,33 @@ class ProfileSerializer(UserSerializer):
         }
 
 
-class UserSignupSerializer(serializers.ModelSerializer):
-    """Сериалайзер для регистрации Пользователя."""
-
-    class Meta:
-        model = models.User
-        fields = ('username', 'email',)
-
-
-class UsernameConfirmationCodeSerializer(serializers.Serializer):
-    """Сериалайзер для валидации данных для получении токена."""
-
+class UsernameSerializer(serializers.Serializer):
     username = serializers.CharField(
-        validators=(models.User.username_validator,),
-        max_length=150,
+        validators=(
+            models.User.username_validator,
+            validators.RegexValidator(
+                regex=settings.USERNAME_INVALID_REGEX,
+                inverse_match=True,
+                message='Недопустимое имя пользователя.',
+                flags=re.IGNORECASE
+            ),
+        ),
+        max_length=settings.USERNAME_LENGTH,
+        required=True,
     )
+
+
+class UserSignupSerializer(UsernameSerializer):
+    """Сериалайзер для валидации данных при регистрации Пользователя."""
+    email = serializers.EmailField(
+        max_length=settings.EMAIL_LENGTH,
+        required=True,
+    )
+
+
+class UsernameConfirmationCodeSerializer(UsernameSerializer):
+    """Сериалайзер для валидации данных для получении токена."""
     confirmation_code = serializers.CharField(
-        validators=()
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        required=True,
     )

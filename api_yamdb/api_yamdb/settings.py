@@ -1,3 +1,4 @@
+import string
 from datetime import timedelta
 from pathlib import Path
 
@@ -95,8 +96,6 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
 
-AUTH_USER_MODEL = 'reviews.User'
-
 LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
@@ -112,3 +111,14 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 EMAIL_FILE_PATH = BASE_DIR / 'tmp/messages/'
+
+AUTH_USER_MODEL = 'reviews.User'
+
+EMAIL_LENGTH = 254
+PASSWORD_LENGTH = 128
+USERNAME_LENGTH = 150
+USERNAME_INVALID_REGEX = r'\bme\b'
+PROFILE_URL_PATH = 'me'
+CONFIRMATION_CODE_LENGTH = 10
+CONFIRMATION_CODE_REGEX = r'^[A-Z\d]{%d}$' % CONFIRMATION_CODE_LENGTH
+CONFIRMATION_CODE_SYMBOLS = string.ascii_uppercase + string.digits

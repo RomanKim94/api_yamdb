@@ -22,8 +22,8 @@ urlpatterns = [
     path('v1/', include([
         path('', include(router_v1.urls)),
         path('auth/', include([
-            path('token/', views.TokenApiView.as_view(), name='token'),
-            path('signup/', views.SignUpApiView.as_view(), name='signup'),
+            path('token/', views.get_token_api_view, name='token'),
+            path('signup/', views.signup_api_view, name='signup'),
         ])),
     ])),
 ]
