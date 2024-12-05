@@ -1,7 +1,7 @@
 import random
 
 from django.conf import settings
-from django.db.models import Avg, Q
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
@@ -57,7 +57,9 @@ class TitleViewSet(viewsets.ModelViewSet):
     """Представление для произведений."""
 
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
-    queryset = models.Title.objects.annotate(rating=Avg('reviews__score')).all()
+    queryset = models.Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).all()
     permission_classes = (api_permissions.IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = TitleFilter
@@ -137,7 +139,9 @@ class UserModelViewSet(viewsets.ModelViewSet):
         serializer = api_serializers.ProfileSerializer
 
         if request.method == const.HTTPMethod.PATCH:
-            serializer = serializer(request.user, data=request.data, partial=True)
+            serializer = serializer(
+                request.user, data=request.data, partial=True
+            )
             serializer.is_valid(raise_exception=True)
             serializer.save()
         else:
