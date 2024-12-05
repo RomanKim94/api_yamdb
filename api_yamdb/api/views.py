@@ -1,4 +1,7 @@
-from django.db.models import Avg
+import random
+
+from django.conf import settings
+from django.db.models import Avg, Q
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (
@@ -6,16 +9,20 @@ from rest_framework import (
     mixins,
     permissions,
     status,
-    views,
     viewsets,
 )
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import SearchFilter
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from api import serializers as api_serializers, utils
-from api import permissions as api_permissions
+from api import (
+    constants as const,
+    serializers as api_serializers,
+    permissions as api_permissions,
+    utils,
+)
 from api.filters import TitleFilter
 from reviews import models
 
@@ -120,79 +127,89 @@ class UserModelViewSet(viewsets.ModelViewSet):
     @action(methods=('get', 'patch',),
             detail=False,
             url_name='profile',
-            url_path='me',
+            url_path=settings.PROFILE_URL_PATH,
             permission_classes=(permissions.IsAuthenticated,))
     def profile(self, request, *args, **kwargs):
         """API Профиля пользователя.
 
         API доступно только для авторизованного пользователя.
         """
-        if request.method == 'GET':
-            return self.retrieve(request, *args, **kwargs)
+        serializer = api_serializers.ProfileSerializer
 
-        return self.partial_update(request, *args, **kwargs)
+        if request.method == const.HTTPMethod.PATCH:
+            serializer = serializer(request.user, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        else:
+            serializer = serializer(request.user)
 
-    def get_object(self):
-        if self.action == self.profile.__name__:
-            return self.request.user
-
-        return super(UserModelViewSet, self).get_object()
-
-    def get_serializer_class(self):
-        if self.action == self.profile.__name__:
-            return api_serializers.ProfileSerializer
-
-        return super(UserModelViewSet, self).get_serializer_class()
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class TokenApiView(views.APIView):
-    """Представление для генерации токена аунтентификации.
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def get_token_api_view(request):
+    """Представление для получения токена аунтентификации."""
 
-    Доступно для не авторизованного пользователя.
-    """
-    permission_classes = (permissions.AllowAny,)
+    serializer = api_serializers.UsernameConfirmationCodeSerializer(
+        data=request.data
+    )
+    serializer.is_valid(raise_exception=True)
+    user = generics.get_object_or_404(
+        models.User, username=request.data.get('username')
+    )
 
-    def post(self, request, *args, **kwargs):
-        serializer = api_serializers.UsernameConfirmationCodeSerializer(
-            data=request.data
-        )
-        serializer.is_valid(raise_exception=True)
-        user = generics.get_object_or_404(
-            models.User, username=request.data.get('username')
-        )
+    if user.confirmation_code != request.data.get('confirmation_code'):
+        raise ValidationError(const.CONFIRMATION_CODE_ERROR)
 
-        if user.confirmation_code != request.data.get('confirmation_code'):
-            raise ValidationError(f'Некорректный код подтверждения.')
+    token = str(RefreshToken.for_user(user).access_token)
+    models.User.objects.update(confirmation_code='')
 
-        return Response(
-            {'token': utils.get_token_for_user(user)},
-            status=status.HTTP_200_OK,
-        )
+    return Response({'token': token}, status=status.HTTP_200_OK)
 
 
-class SignUpApiView(views.APIView):
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
+def signup_api_view(request):
     """Представление для самостоятельной регистрации.
 
     Создает нового пользователя, с дальнейшей отправкой на указанный email
     кода подтверждения. При повторном запросе происходит обновление
     кода подтверждения с повторной отправкой на email.
     """
-    permission_classes = (permissions.AllowAny,)
+    serializer = api_serializers.UserSignupSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
 
-    def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        email = request.data.get('email')
-        user = models.User.objects.filter(username=username,
-                                          email=email).first()
-        serializer = api_serializers.UserSignupSerializer(data=request.data)
+    username = serializer.validated_data.get('username')
+    email = serializer.validated_data.get('email')
+    confirmation_code = ''.join(random.choices(
+        settings.CONFIRMATION_CODE_SYMBOLS,
+        k=settings.CONFIRMATION_CODE_LENGTH,
+    ))
 
-        if user:
-            serializer.instance = user
+    user = models.User.objects.filter(username=username, email=email).first()
 
-        serializer.is_valid(raise_exception=True)
-        user = serializer.save(
-            confirmation_code=utils.generate_confirmation_code()
+    if user:
+        user.confirmation_code = confirmation_code
+        user.save()
+    else:
+        errors = {}
+        if models.User.objects.filter(username=username).exists():
+            errors.update({
+                'username': f'Имя пользователя {username} уже занято.',
+            })
+
+        if models.User.objects.filter(email=email).exists():
+            errors.update({
+                'email': f'Почта {email} уже занята.',
+            })
+
+        if errors:
+            raise ValidationError(errors)
+
+        user = models.User.objects.create_user(
+            username=username, email=email, confirmation_code=confirmation_code
         )
-        utils.send_confirmation_email(user)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    utils.send_confirmation_email(user)
+    return Response(serializer.validated_data, status=status.HTTP_200_OK)
