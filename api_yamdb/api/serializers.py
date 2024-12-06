@@ -34,6 +34,7 @@ class TitleReadSerializer(serializers.ModelSerializer):
         model = models.Title
         fields = ('id', 'name', 'year', 'rating', 'description',
                   'genre', 'category')
+        read_only_fields = fields
 
 
 class TitleWrightSerializer(serializers.ModelSerializer):
@@ -45,21 +46,24 @@ class TitleWrightSerializer(serializers.ModelSerializer):
     genre = SlugRelatedField(
         slug_field='slug', many=True, allow_null=False, allow_empty=False,
         queryset=models.Genre.objects.all())
-    rating = serializers.IntegerField(read_only=True, default=None)
 
     class Meta:
         model = models.Title
-        fields = ('id', 'name', 'year', 'rating', 'description',
+        fields = ('id', 'name', 'year', 'description',
                   'genre', 'category')
 
     def to_representation(self, instance):
-        """Настройка показа категорий и жанров в формате: имя, слаг."""
+        """Данные сериализуются через TitleReadSerializer."""
         return TitleReadSerializer(instance).data
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
         read_only=True, slug_field='username',
+    )
+    score = serializers.IntegerField(
+        min_value=reviews_const.MIN_SCORE_VALUE,
+        max_value=reviews_const.MAX_SCORE_VALUE,
     )
 
     class Meta:
@@ -76,21 +80,6 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(api_const.DOUBLE_REVIEW_ERROR)
         return super().validate(attrs)
 
-    def validate_score(self, score):
-        """Валидация поля score на соответствие диапазону от 1 до 10."""
-        if (reviews_const.MIN_SCORE_VALUE > score
-                or score > reviews_const.MAX_SCORE_VALUE):
-            raise serializers.ValidationError(
-                {
-                    'score': reviews_const.SCORE_VALIDATION_ERROR.format(
-                        score=score,
-                        minimum=reviews_const.MIN_SCORE_VALUE,
-                        maximum=reviews_const.MAX_SCORE_VALUE,
-                    )
-                }
-            )
-        return score
-
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.SlugRelatedField(
@@ -100,7 +89,6 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Comment
         fields = ('id', 'text', 'author', 'pub_date',)
-        read_only_fields = ('pub_date',)
 
 
 class UserSerializer(serializers.ModelSerializer):

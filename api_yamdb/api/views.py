@@ -70,19 +70,22 @@ class TitleViewSet(viewsets.ModelViewSet):
         return api_serializers.TitleWrightSerializer
 
 
-class ReviewViewSet(viewsets.ModelViewSet):
-    """Вьюсет для работы с отзывами."""
-
-    serializer_class = api_serializers.ReviewSerializer
+class BaseViewSet(viewsets.ModelViewSet):
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
-        api_permissions.IsSuperuserOrAdminOrModeratorOrAuthor,
+        api_permissions.IsAdminOrModeratorOrAuthor,
     )
     http_method_names = ('get', 'post', 'patch', 'delete', 'head', 'options')
 
     def get_title(self):
         """Метод возвращает объект произведения по id полученного из url."""
         return get_object_or_404(models.Title, pk=self.kwargs['title_id'])
+
+
+class ReviewViewSet(BaseViewSet):
+    """Вьюсет для работы с отзывами."""
+
+    serializer_class = api_serializers.ReviewSerializer
 
     def get_queryset(self):
         return self.get_title().reviews.all()
@@ -91,7 +94,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, title=self.get_title())
 
 
-class CommentViewSet(ReviewViewSet):
+class CommentViewSet(BaseViewSet):
     """Представление для комментариев."""
 
     serializer_class = api_serializers.CommentSerializer
@@ -102,7 +105,9 @@ class CommentViewSet(ReviewViewSet):
         Поиск отзыва по id полученного из url.
         """
         return get_object_or_404(
-            models.Review, title=self.get_title(), pk=self.kwargs['review_id']
+            models.Review,
+            title=super().get_title(),
+            pk=self.kwargs['review_id'],
         )
 
     def perform_create(self, serializer):
