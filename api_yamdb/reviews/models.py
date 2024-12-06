@@ -4,11 +4,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 from . import constants as const
-from .validators import (
-    validate_invalid_username,
-    validate_year,
-    UsernameValidator,
-)
+from .validators import validate_invalid_username, validate_year
 
 
 class User(AbstractUser):
@@ -25,7 +21,8 @@ class User(AbstractUser):
         'Логин',
         max_length=const.USERNAME_LENGTH,
         unique=True,
-        validators=(UsernameValidator(), validate_invalid_username),
+        validators=(validators.RegexValidator(regex=r'^[\w.@+-]+\Z'),
+                    validate_invalid_username),
     )
     email = models.EmailField(
         'Email',

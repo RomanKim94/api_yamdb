@@ -142,14 +142,15 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=(permissions.IsAuthenticated,))
     def profile(self, request, *args, **kwargs):
         """Представление для API Профиля пользователя."""
-        profile_serializer = api_serializers.ProfileSerializer(request.user)
-
+        serializer_class = api_serializers.ProfileSerializer
         if request.method == 'PATCH':
-            profile_serializer.initial_data = request.data
-            profile_serializer.partial = True
-
+            profile_serializer = serializer_class(
+                request.user, data=request.data, partial=True
+            )
             profile_serializer.is_valid(raise_exception=True)
             profile_serializer.save()
+        else:
+            profile_serializer = serializer_class(request.user)
 
         return Response(profile_serializer.data, status=status.HTTP_200_OK)
 
@@ -163,10 +164,11 @@ def get_token_api_view(request):
     )
     serializer.is_valid(raise_exception=True)
     user = generics.get_object_or_404(
-        models.User, username=request.data['username']
+        models.User.objects.exclude(confirmation_code=''),
+        username=request.data['username']
     )
 
-    if user.confirmation_code != request.data.get('confirmation_code'):
+    if user.confirmation_code != request.data['confirmation_code']:
         user.confirmation_code = ''
         user.save(update_fields=('confirmation_code',))
         raise ValidationError(const.CONFIRMATION_CODE_ERROR)
@@ -193,24 +195,15 @@ def signup_api_view(request):
         settings.CONFIRMATION_CODE_SYMBOLS,
         k=settings.CONFIRMATION_CODE_LENGTH,
     ))
-    fields_error_messages = (
-        ('username', f'Имя пользователя {username} уже занято.'),
-        ('email', f'Почта {email} уже занята.'),
-    )
-
     try:
         user, _ = models.User.objects.get_or_create(
             username=username,
             email=email,
-            defaults={'confirmation_code': confirmation_code},
         )
-    except (IntegrityError, Exception) as exc:
-        errors, exc = {}, str(exc)
-        for field_name, message in fields_error_messages:
-            if field_name in exc:
-                errors[field_name] = message
-
-        raise ValidationError(errors or {'detail': exc})
+        user.confirmation_code = confirmation_code
+        user.save(update_fields=('confirmation_code',))
+    except IntegrityError as exc:
+        raise ValidationError({'detail': exc})
 
     utils.send_confirmation_email(user)
     return Response(serializer.validated_data, status=status.HTTP_200_OK)

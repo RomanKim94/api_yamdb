@@ -1,10 +1,11 @@
 from django.conf import settings
+from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
 from api import constants as api_const
 from reviews import constants as reviews_const, models
-from reviews.validators import validate_invalid_username, UsernameValidator
+from reviews.validators import validate_invalid_username
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -99,6 +100,9 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'first_name', 'last_name',
                   'bio', 'role',)
 
+    def validate_username(self, username):
+        return validate_invalid_username(username)
+
 
 class ProfileSerializer(UserSerializer):
     """Сериалайзер для отображения и изменения Профиля пользователя."""
@@ -109,7 +113,8 @@ class ProfileSerializer(UserSerializer):
 
 class UsernameSerializer(serializers.Serializer):
     username = serializers.CharField(
-        validators=(UsernameValidator(), validate_invalid_username),
+        validators=(RegexValidator(regex=r'^[\w.@+-]+\Z'),
+                    validate_invalid_username),
         max_length=reviews_const.USERNAME_LENGTH,
         required=True,
     )

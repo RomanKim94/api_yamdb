@@ -20,15 +20,13 @@ router_v1.register(
 app_name = 'api'
 
 auth_urlpatterns = [
-    path('auth/', include([
-        path('token/', views.get_token_api_view, name='token'),
-        path('signup/', views.signup_api_view, name='signup'),
-    ])),
+    path('token/', views.get_token_api_view, name='token'),
+    path('signup/', views.signup_api_view, name='signup'),
 ]
 
 urlpatterns = [
     path('v1/', include([
         path('', include(router_v1.urls)),
-        path('', include(auth_urlpatterns)),
+        path('auth/', include(auth_urlpatterns)),
     ])),
 ]
