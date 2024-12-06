@@ -20,9 +20,3 @@ def validate_invalid_username(username):
         raise ValidationError(f'Недопустимый логин {username}')
 
     return username
-
-
-class UsernameValidator(validators.RegexValidator):
-    """Проверка логина на отсутствие недопустимых символов."""
-
-    regex = r'^[\w.@+-]+\Z'
