@@ -1,12 +1,14 @@
-import re
-
 from django.conf import settings
 from django.core import validators
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from api.validators import validate_year
-from api import constants as const
+from . import constants as const
+from .validators import (
+    validate_invalid_username,
+    validate_year,
+    UsernameValidator,
+)
 
 
 class User(AbstractUser):
@@ -18,38 +20,22 @@ class User(AbstractUser):
         MODERATOR: 'Модератор',
         USER: 'Пользователь',
     }
-    role_max_length = len(max(ROLES_CHOICES.keys(),
-                              key=lambda role: len(role)))
 
     username = models.CharField(
-        'Имя пользователя',
-        max_length=settings.USERNAME_LENGTH,
+        'Логин',
+        max_length=const.USERNAME_LENGTH,
         unique=True,
-        validators=(
-            AbstractUser.username_validator,
-            validators.RegexValidator(
-                regex=settings.USERNAME_INVALID_REGEX,
-                inverse_match=True,
-                message='Недопустимое имя пользователя.',
-                flags=re.IGNORECASE
-            ),
-        ),
-    )
-    password = models.CharField(
-        'Пароль',
-        max_length=settings.PASSWORD_LENGTH,
-        blank=True,
-        null=True,
+        validators=(UsernameValidator(), validate_invalid_username),
     )
     email = models.EmailField(
         'Email',
         unique=True,
-        max_length=settings.EMAIL_LENGTH,
+        max_length=const.EMAIL_LENGTH,
     )
-    bio = models.TextField('Биография', blank=True)
+    bio = models.TextField('О себе', blank=True)
     role = models.CharField(
         'Роль',
-        max_length=role_max_length,
+        max_length=max(len(role) for role in ROLES_CHOICES),
         choices=ROLES_CHOICES.items(),
         default=USER,
     )
@@ -64,14 +50,6 @@ class User(AbstractUser):
             ),
         )
     )
-
-    class Meta(AbstractUser.Meta):
-        constraints = (
-            models.UniqueConstraint(
-                fields=('username', 'email',),
-                name='unique_username_email',
-            ),
-        )
 
     @property
     def is_user(self):

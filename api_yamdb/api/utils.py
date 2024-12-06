@@ -12,7 +12,7 @@ CONFIRMATION_EMAIL_SUBJECT = 'confirmation_code_email_subject.txt'
 def send_confirmation_email(user: User) -> bool:
     """Отправляет письмо подтверждения на электронную почту пользователя."""
     return bool(send_mail(
-        render_to_string(CONFIRMATION_EMAIL_SUBJECT),
+        CONFIRMATION_EMAIL_SUBJECT,
         render_to_string(CONFIRMATION_EMAIL_BODY, {'user': user}),
         settings.DEFAULT_FROM_EMAIL,
         [user.email]

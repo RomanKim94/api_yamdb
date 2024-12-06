@@ -12,11 +12,11 @@ class AdminsPermissions(permissions.BasePermission):
 
 
 class IsAdminOrModeratorOrAuthor(AdminsPermissions):
+    """Устанавливает доступ суперпользователю/админу/модератору/автору.
+
+    Анонимным пользователям доступ только на чтение.
     """
-    Класс для установки доступа
-    суперпользователю, администратору, модератору и автору,
-    либо всем на чтение.
-    """
+
     def has_permission(self, request, view):
         return True
 

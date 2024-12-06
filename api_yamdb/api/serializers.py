@@ -1,13 +1,10 @@
-import re
-
 from django.conf import settings
-from django.core import validators
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
-from api import constants as const
-from reviews import models
-from reviews.constants import MIN_SCORE_VALUE, MAX_SCORE_VALUE
+from api import constants as api_const
+from reviews import constants as reviews_const, models
+from reviews.validators import validate_invalid_username, UsernameValidator
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -56,7 +53,7 @@ class TitleWrightSerializer(serializers.ModelSerializer):
                   'genre', 'category')
 
     def to_representation(self, instance):
-        """Данные сериализуются через TitleReadSerializer"""
+        """Данные сериализуются через TitleReadSerializer."""
         return TitleReadSerializer(instance).data
 
 
@@ -65,8 +62,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True, slug_field='username',
     )
     score = serializers.IntegerField(
-        min_value=MIN_SCORE_VALUE,
-        max_value=MAX_SCORE_VALUE,
+        min_value=reviews_const.MIN_SCORE_VALUE,
+        max_value=reviews_const.MAX_SCORE_VALUE,
     )
 
     class Meta:
@@ -80,7 +77,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             title_id=self.context['view'].kwargs['title_id'],
             author=request.user,
         ).exists():
-            raise serializers.ValidationError(const.DOUBLE_REVIEW_ERROR)
+            raise serializers.ValidationError(api_const.DOUBLE_REVIEW_ERROR)
         return super().validate(attrs)
 
 
@@ -107,37 +104,29 @@ class ProfileSerializer(UserSerializer):
     """Сериалайзер для отображения и изменения Профиля пользователя."""
 
     class Meta(UserSerializer.Meta):
-        extra_kwargs = {
-            'role': {'read_only': True},
-        }
+        read_only_fields = ('role',)
 
 
 class UsernameSerializer(serializers.Serializer):
     username = serializers.CharField(
-        validators=(
-            models.User.username_validator,
-            validators.RegexValidator(
-                regex=settings.USERNAME_INVALID_REGEX,
-                inverse_match=True,
-                message='Недопустимое имя пользователя.',
-                flags=re.IGNORECASE
-            ),
-        ),
-        max_length=settings.USERNAME_LENGTH,
+        validators=(UsernameValidator(), validate_invalid_username),
+        max_length=reviews_const.USERNAME_LENGTH,
         required=True,
     )
 
 
 class UserSignupSerializer(UsernameSerializer):
     """Сериалайзер для валидации данных при регистрации Пользователя."""
+
     email = serializers.EmailField(
-        max_length=settings.EMAIL_LENGTH,
+        max_length=reviews_const.EMAIL_LENGTH,
         required=True,
     )
 
 
 class UsernameConfirmationCodeSerializer(UsernameSerializer):
     """Сериалайзер для валидации данных для получении токена."""
+
     confirmation_code = serializers.CharField(
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         required=True,
