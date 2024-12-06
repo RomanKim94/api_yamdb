@@ -3,9 +3,10 @@ from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
 
-from api import constants as api_const
 from reviews import constants as reviews_const, models
 from reviews.validators import validate_invalid_username
+
+DOUBLE_REVIEW_ERROR = 'Можно оставлять только один отзыв на одно произведение.'
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -54,7 +55,6 @@ class TitleWrightSerializer(serializers.ModelSerializer):
                   'genre', 'category')
 
     def to_representation(self, instance):
-        """Данные сериализуются через TitleReadSerializer."""
         return TitleReadSerializer(instance).data
 
 
@@ -78,7 +78,7 @@ class ReviewSerializer(serializers.ModelSerializer):
             title_id=self.context['view'].kwargs['title_id'],
             author=request.user,
         ).exists():
-            raise serializers.ValidationError(api_const.DOUBLE_REVIEW_ERROR)
+            raise serializers.ValidationError(DOUBLE_REVIEW_ERROR)
         return super().validate(attrs)
 
 
