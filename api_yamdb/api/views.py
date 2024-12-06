@@ -73,7 +73,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return api_serializers.TitleWrightSerializer
 
 
-class BaseViewSet(viewsets.ModelViewSet):
+class HttpMethodsPermissionsMixin:
     permission_classes = (
         permissions.IsAuthenticatedOrReadOnly,
         api_permissions.IsAdminOrModeratorOrAuthor,
@@ -85,7 +85,7 @@ class BaseViewSet(viewsets.ModelViewSet):
         return get_object_or_404(models.Title, pk=self.kwargs['title_id'])
 
 
-class ReviewViewSet(BaseViewSet):
+class ReviewViewSet(HttpMethodsPermissionsMixin, viewsets.ModelViewSet):
     """Вьюсет для работы с отзывами."""
 
     serializer_class = api_serializers.ReviewSerializer
@@ -97,7 +97,7 @@ class ReviewViewSet(BaseViewSet):
         serializer.save(author=self.request.user, title=self.get_title())
 
 
-class CommentViewSet(BaseViewSet):
+class CommentViewSet(HttpMethodsPermissionsMixin, viewsets.ModelViewSet):
     """Представление для комментариев."""
 
     serializer_class = api_serializers.CommentSerializer
@@ -109,7 +109,7 @@ class CommentViewSet(BaseViewSet):
         """
         return get_object_or_404(
             models.Review,
-            title=super().get_title(),
+            title=self.get_title(),
             pk=self.kwargs['review_id'],
         )
 
