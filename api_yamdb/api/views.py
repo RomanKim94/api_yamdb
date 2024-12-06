@@ -27,10 +27,12 @@ from api.filters import TitleFilter
 from reviews import models
 
 
-class CategoryGenreViewset(mixins.ListModelMixin,
-                           mixins.CreateModelMixin,
-                           mixins.DestroyModelMixin,
-                           viewsets.GenericViewSet):
+class NameSlugViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet
+):
     """Базовый вьюсет для категорий и жанров."""
 
     permission_classes = (api_permissions.IsAdminOrReadOnly,)
@@ -39,14 +41,14 @@ class CategoryGenreViewset(mixins.ListModelMixin,
     lookup_field = 'slug'
 
 
-class CategoryViewSet(CategoryGenreViewset):
+class CategoryViewSet(NameSlugViewSet):
     """Представление для категорий."""
 
     queryset = models.Category.objects.all()
     serializer_class = api_serializers.CategorySerializer
 
 
-class GenreViewSet(CategoryGenreViewset):
+class GenreViewSet(NameSlugViewSet):
     """Представление для жанров."""
 
     queryset = models.Genre.objects.all()
@@ -60,6 +62,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = models.Title.objects.annotate(
         rating=Avg('reviews__score')
     ).all()
+    ordering = models.Title._meta.ordering
     permission_classes = (api_permissions.IsAdminOrReadOnly,)
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filterset_class = TitleFilter

@@ -86,7 +86,7 @@ class User(AbstractUser):
         return self.role == self.ADMIN or self.is_staff
 
 
-class ReviewComment(models.Model):
+class AuthorTextPubDate(models.Model):
     text = models.TextField(verbose_name='Текст')
     author = models.ForeignKey(
         User,
@@ -102,6 +102,9 @@ class ReviewComment(models.Model):
         abstract = True
         ordering = ('-pub_date',)
         default_related_name = '%(class)ss'
+
+    def __str__(self):
+        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
 
 
 class NameSlug(models.Model):
@@ -159,7 +162,7 @@ class Title(models.Model):
     class Meta:
         verbose_name = 'Произведение'
         verbose_name_plural = 'Произведения'
-        ordering = ('-year',)
+        ordering = ('-year', 'name', 'description')
         default_related_name = 'titles'
 
     def __str__(self):
@@ -167,7 +170,7 @@ class Title(models.Model):
                 f'category: {self.category}')
 
 
-class Review(ReviewComment):
+class Review(AuthorTextPubDate):
     title = models.ForeignKey(
         Title,
         verbose_name='Произведение',
@@ -179,7 +182,7 @@ class Review(ReviewComment):
                     validators.MaxValueValidator(const.MAX_SCORE_VALUE)),
     )
 
-    class Meta(ReviewComment.Meta):
+    class Meta(AuthorTextPubDate.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         constraints = (
@@ -189,20 +192,14 @@ class Review(ReviewComment):
             ),
         )
 
-    def __str__(self):
-        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
 
-
-class Comment(ReviewComment):
+class Comment(AuthorTextPubDate):
     review = models.ForeignKey(
         Review,
         verbose_name='Отзыв',
         on_delete=models.CASCADE,
     )
 
-    class Meta(ReviewComment.Meta):
+    class Meta(AuthorTextPubDate.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
-
-    def __str__(self):
-        return f'text: {self.text[:const.STRING_SHOW]} author: {self.author}'
