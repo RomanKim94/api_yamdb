@@ -1,0 +1,13 @@
+NAME_STRING_LENGTH = 255
+STRING_SHOW = 30
+SLUG_LENGTH = 50
+NAME_TITLE_LENGTH = 100
+EMAIL_LENGTH = 254
+USERNAME_LENGTH = 150
+
+CONFIRMATION_CODE_ERROR = 'Некоректный код подтверждения.'
+
+MIN_SCORE_VALUE = 1
+MAX_SCORE_VALUE = 10
+SCORE_VALIDATION_ERROR = ('Оценка {score} не соответствует диапазону от '
+                          f'{MIN_SCORE_VALUE} до {MAX_SCORE_VALUE}')

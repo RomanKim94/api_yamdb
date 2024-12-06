@@ -1,6 +1,7 @@
 import random
 
 from django.conf import settings
+from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -18,13 +19,12 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api import (
-    constants as const,
     serializers as api_serializers,
     permissions as api_permissions,
     utils,
 )
 from api.filters import TitleFilter
-from reviews import models
+from reviews import constants as const, models
 
 
 class CategoryGenreViewset(mixins.ListModelMixin,
@@ -97,9 +97,10 @@ class CommentViewSet(ReviewViewSet):
     serializer_class = api_serializers.CommentSerializer
 
     def get_review(self):
-        '''
-        Метод возвращает объект отзыва к произведению по id полученного из url.
-        '''
+        """Метод возвращает объект отзыва к произведению.
+
+        Поиск отзыва по id полученного из url.
+        """
         return get_object_or_404(
             models.Review, title=self.get_title(), pk=self.kwargs['review_id']
         )
@@ -111,7 +112,7 @@ class CommentViewSet(ReviewViewSet):
         return self.get_review().comments.all()
 
 
-class UserModelViewSet(viewsets.ModelViewSet):
+class UserViewSet(viewsets.ModelViewSet):
     """Представление для API Пользователей.
 
     API доступно только администратору.
@@ -132,43 +133,37 @@ class UserModelViewSet(viewsets.ModelViewSet):
             url_path=settings.PROFILE_URL_PATH,
             permission_classes=(permissions.IsAuthenticated,))
     def profile(self, request, *args, **kwargs):
-        """API Профиля пользователя.
+        """Представление для API Профиля пользователя."""
+        profile_serializer = api_serializers.ProfileSerializer(request.user)
 
-        API доступно только для авторизованного пользователя.
-        """
-        serializer = api_serializers.ProfileSerializer
+        if request.method == 'PATCH':
+            profile_serializer.initial_data = request.data
+            profile_serializer.partial = True
 
-        if request.method == const.HTTPMethod.PATCH:
-            serializer = serializer(
-                request.user, data=request.data, partial=True
-            )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        else:
-            serializer = serializer(request.user)
+            profile_serializer.is_valid(raise_exception=True)
+            profile_serializer.save()
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(profile_serializer.data, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def get_token_api_view(request):
     """Представление для получения токена аунтентификации."""
-
     serializer = api_serializers.UsernameConfirmationCodeSerializer(
         data=request.data
     )
     serializer.is_valid(raise_exception=True)
     user = generics.get_object_or_404(
-        models.User, username=request.data.get('username')
+        models.User, username=request.data['username']
     )
 
     if user.confirmation_code != request.data.get('confirmation_code'):
+        user.confirmation_code = ''
+        user.save(update_fields=('confirmation_code',))
         raise ValidationError(const.CONFIRMATION_CODE_ERROR)
 
     token = str(RefreshToken.for_user(user).access_token)
-    models.User.objects.update(confirmation_code='')
-
     return Response({'token': token}, status=status.HTTP_200_OK)
 
 
@@ -190,30 +185,24 @@ def signup_api_view(request):
         settings.CONFIRMATION_CODE_SYMBOLS,
         k=settings.CONFIRMATION_CODE_LENGTH,
     ))
+    fields_error_messages = (
+        ('username', f'Имя пользователя {username} уже занято.'),
+        ('email', f'Почта {email} уже занята.'),
+    )
 
-    user = models.User.objects.filter(username=username, email=email).first()
-
-    if user:
-        user.confirmation_code = confirmation_code
-        user.save()
-    else:
-        errors = {}
-        if models.User.objects.filter(username=username).exists():
-            errors.update({
-                'username': f'Имя пользователя {username} уже занято.',
-            })
-
-        if models.User.objects.filter(email=email).exists():
-            errors.update({
-                'email': f'Почта {email} уже занята.',
-            })
-
-        if errors:
-            raise ValidationError(errors)
-
-        user = models.User.objects.create_user(
-            username=username, email=email, confirmation_code=confirmation_code
+    try:
+        user, _ = models.User.objects.get_or_create(
+            username=username,
+            email=email,
+            defaults={'confirmation_code': confirmation_code},
         )
+    except (IntegrityError, Exception) as exc:
+        errors, exc = {}, str(exc)
+        for field_name, message in fields_error_messages:
+            if field_name in exc:
+                errors[field_name] = message
+
+        raise ValidationError(errors or {'detail': exc})
 
     utils.send_confirmation_email(user)
     return Response(serializer.validated_data, status=status.HTTP_200_OK)

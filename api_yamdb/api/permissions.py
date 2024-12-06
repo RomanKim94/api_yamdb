@@ -4,11 +4,11 @@ from rest_framework import permissions
 class IsSuperuserOrAdminOrModeratorOrAuthor(
     permissions.BasePermission,
 ):
+    """Устанавливает доступ суперпользователю/админу/модератору/автору.
+
+    Анонимным пользователям доступ только на чтение.
     """
-    Класс для установки доступа
-    суперпользователю, администратору, модератору и автору,
-    либо всем на чтение.
-    """
+
     def has_object_permission(self, request, view, obj):
         user = request.user
         return (
