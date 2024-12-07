@@ -1,4 +1,3 @@
-import string
 from datetime import timedelta
 from pathlib import Path
 
@@ -114,7 +113,4 @@ EMAIL_FILE_PATH = BASE_DIR / 'tmp/messages/'
 
 AUTH_USER_MODEL = 'reviews.User'
 
-USERNAME_INVALID = PROFILE_URL_PATH = 'me'
-CONFIRMATION_CODE_LENGTH = 10
-CONFIRMATION_CODE_SYMBOLS = string.ascii_uppercase + string.digits
-CONFIRMATION_CODE_REGEX = rf'^[{CONFIRMATION_CODE_SYMBOLS}]$'
+USERNAME_INVALID = 'me'

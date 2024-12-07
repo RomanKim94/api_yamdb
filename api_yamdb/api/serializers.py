@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
@@ -101,6 +100,7 @@ class UserSerializer(serializers.ModelSerializer):
                   'bio', 'role',)
 
     def validate_username(self, username):
+        RegexValidator(regex=r'^[\w.@+-]+\Z')(username)
         return validate_invalid_username(username)
 
 
@@ -132,7 +132,4 @@ class UserSignupSerializer(UsernameSerializer):
 class UsernameConfirmationCodeSerializer(UsernameSerializer):
     """Сериалайзер для валидации данных для получении токена."""
 
-    confirmation_code = serializers.CharField(
-        max_length=settings.CONFIRMATION_CODE_LENGTH,
-        required=True,
-    )
+    confirmation_code = serializers.CharField(required=True)

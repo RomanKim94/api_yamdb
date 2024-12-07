@@ -1,6 +1,5 @@
-import random
-
 from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -137,7 +136,7 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(methods=('get', 'patch',),
             detail=False,
             url_name='profile',
-            url_path=settings.PROFILE_URL_PATH,
+            url_path=settings.USERNAME_INVALID,
             permission_classes=(permissions.IsAuthenticated,))
     def profile(self, request, *args, **kwargs):
         """Представление для API Профиля пользователя."""
@@ -162,18 +161,18 @@ def get_token_api_view(request):
         data=request.data
     )
     serializer.is_valid(raise_exception=True)
+    confirmation_code = serializer.validated_data['confirmation_code']
     user = generics.get_object_or_404(
-        models.User.objects.exclude(confirmation_code=''),
-        username=request.data['username']
+        models.User, username=request.data['username']
     )
 
-    if user.confirmation_code != request.data['confirmation_code']:
-        user.confirmation_code = ''
-        user.save(update_fields=('confirmation_code',))
-        raise ValidationError(const.CONFIRMATION_CODE_ERROR)
+    if default_token_generator.check_token(user, confirmation_code):
+        return Response(
+            {'token': str(RefreshToken.for_user(user).access_token)},
+            status=status.HTTP_200_OK,
+        )
 
-    token = str(RefreshToken.for_user(user).access_token)
-    return Response({'token': token}, status=status.HTTP_200_OK)
+    raise ValidationError(const.CONFIRMATION_CODE_ERROR)
 
 
 @api_view(['POST'])
@@ -187,22 +186,22 @@ def signup_api_view(request):
     """
     serializer = api_serializers.UserSignupSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-
-    username = serializer.validated_data.get('username')
-    email = serializer.validated_data.get('email')
-    confirmation_code = ''.join(random.choices(
-        settings.CONFIRMATION_CODE_SYMBOLS,
-        k=settings.CONFIRMATION_CODE_LENGTH,
-    ))
+    data = serializer.validated_data
+    username = data['username']
+    email = data['email']
     try:
         user, _ = models.User.objects.get_or_create(
             username=username,
             email=email,
         )
-        user.confirmation_code = confirmation_code
-        user.save(update_fields=('confirmation_code',))
-    except IntegrityError as exc:
-        raise ValidationError({'detail': exc})
+    except IntegrityError:
+        error = {'email': f'Данный Email {email} уже занят.'}
+        if models.User.objects.filter(username=username).exists():
+            error = {'username': f'Данный логин {username} уже занят.'}
 
-    utils.send_confirmation_email(user)
-    return Response(serializer.validated_data, status=status.HTTP_200_OK)
+        raise ValidationError(error)
+
+    utils.send_confirmation_email(
+        user, default_token_generator.make_token(user)
+    )
+    return Response(data, status=status.HTTP_200_OK)
