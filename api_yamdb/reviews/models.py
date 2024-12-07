@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.core import validators
 from django.contrib.auth.models import AbstractUser
 from django.db import models
@@ -35,17 +34,6 @@ class User(AbstractUser):
         max_length=max(len(role) for role in ROLES_CHOICES),
         choices=ROLES_CHOICES.items(),
         default=USER,
-    )
-    confirmation_code = models.CharField(
-        'Код подтверждения',
-        blank=True,
-        max_length=settings.CONFIRMATION_CODE_LENGTH,
-        validators=(
-            validators.RegexValidator(
-                regex=settings.CONFIRMATION_CODE_REGEX,
-                message=const.CONFIRMATION_CODE_ERROR
-            ),
-        )
     )
 
     @property
